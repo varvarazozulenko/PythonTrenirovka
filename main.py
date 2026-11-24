@@ -1,15 +1,31 @@
-from fastapi import FastAPI, Depends
+from dotenv import load_dotenv
+load_dotenv()
 
-from dependencies import get_current_user
+from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from slowapi.util import get_remote_address
+
+from limiter import limiter
 from models import User
+from routes.tasks import router as tasks_router
 from routes.auth import router as auth_router
 from routes.admin import router as admin_router
-from dependencies import require_role, UserRole
-
+from dependencies import get_current_user, require_role, UserRole
 
 app = FastAPI()
+
+app.state.limiter = limiter
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://newlxp.ru", "http:localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 app.include_router(auth_router)
 app.include_router(admin_router)
+app.include_router(tasks_router)
 
 @app.get("/profile")
 def profile(current_user: User = Depends(get_current_user)):
